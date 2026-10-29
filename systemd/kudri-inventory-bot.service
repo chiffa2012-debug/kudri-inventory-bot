@@ -1,0 +1,44 @@
+[Unit]
+# Бот учёта расходников «Кудри». Отдельная программа: с Hermes не пересекается,
+# клиентские чаты не трогает, свой токен и свой пользователь.
+Description=Kudri inventory bot (учёт расходников)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kudri-inventory-bot
+Group=kudri-inventory-bot
+WorkingDirectory=/opt/kudri-inventory-bot
+
+# Секреты не в каталоге кода: файл читает только сам сервис.
+EnvironmentFile=/etc/kudri-inventory-bot.env
+Environment=INVENTORY_ACTION_LOG_PATH=/var/log/kudri-inventory-bot/actions.jsonl
+LogsDirectory=kudri-inventory-bot
+LogsDirectoryMode=0700
+
+ExecStart=/opt/kudri-inventory-bot/.venv/bin/python -m bot.main
+
+Restart=always
+RestartSec=5
+
+# Бот держит токен и данные о ценах закупок — ограничиваем его так же, как
+# max-userbot, а не по образцу waitlist-bot, который работает от root.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+UMask=0077
+
+# Единственный локальный файл — короткий обезличенный журнал за 24 часа.
+ReadWritePaths=/var/log/kudri-inventory-bot
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kudri-inventory-bot
+
+[Install]
+WantedBy=multi-user.target
